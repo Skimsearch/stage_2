@@ -15,10 +15,22 @@ datalake/batch/{start}-{end}/{id}.body.txt    ─┴─> Indexing Service ──
 * `start = (id / 1000) * 1000`, `end = start + 999` (the Stage 1 `batch` hierarchy).
 * A book is indexable only when **both** files exist (Ingestion writes them through a
   temporary file and an atomic rename, so an existing file is a complete file).
-* Tokenization: lowercase, then every match of `\b[a-zA-Z]+\b` (with
-  `UNICODE_CHARACTER_CLASS`; Search must tokenize queries the same way).
+* Tokenization: lowercase, then every match of `\b[a-zA-Z]+\b`. Search must tokenize
+  queries with exactly the same rule (the services are independent Maven projects, so
+  copy the rule instead of depending on this class):
+
+  ```java
+  Pattern TOKEN = Pattern.compile("\\b[a-zA-Z]+\\b", Pattern.UNICODE_CHARACTER_CLASS);
+  Matcher m = TOKEN.matcher(text.toLowerCase(Locale.ROOT));   // every m.group() is a token
+  ```
+
+  `UNICODE_CHARACTER_CLASS` matters: since JDK 19 `\b` is ASCII-only by default, and
+  without the flag words with accents are split into fragments.
 * Metadata (title, author, language code, year) comes from the Gutenberg header.
-  `year` is the **Project Gutenberg release year**, not the year of the original work.
+  `year` is the **Project Gutenberg release year** (the `Release date:` line), because the
+  header does not contain the original publication year. The API documentation must say so.
+* `postings.tf` is the raw number of occurrences of the term in the book, available for
+  ranking (e.g. `ORDER BY tf DESC, book_id ASC`).
 
 ## Build and run
 

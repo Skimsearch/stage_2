@@ -1,9 +1,11 @@
 package com.skimsearch.indexing;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,8 +22,9 @@ import java.util.regex.Pattern;
  */
 public final class Tokenizer {
 
-private static final Pattern TOKEN_PATTERN =
-        Pattern.compile("\\b[a-zA-Z]+\\b", Pattern.UNICODE_CHARACTER_CLASS);
+    private static final Pattern TOKEN_PATTERN =
+            Pattern.compile("\\b[a-zA-Z]+\\b", Pattern.UNICODE_CHARACTER_CLASS);
+
     private Tokenizer() {}
 
     /** All tokens in order, with repetitions. */
@@ -40,5 +43,14 @@ private static final Pattern TOKEN_PATTERN =
     /** Distinct tokens, which is what a posting list needs (one entry per book). */
     public static Set<String> uniqueTokens(String text) {
         return new LinkedHashSet<>(tokenize(text));
+    }
+
+    /** Term frequency (occurrences in the text) of every distinct token. */
+    public static Map<String, Integer> termFrequencies(String text) {
+        Map<String, Integer> frequencies = new HashMap<>();
+        for (String token : tokenize(text)) {
+            frequencies.merge(token, 1, Integer::sum);
+        }
+        return frequencies;
     }
 }

@@ -10,16 +10,9 @@ import java.util.Map;
 
 public class App {
 
-    private static final int DEFAULT_PORT = 7003;
-
     public static void main(String[] args) {
 
-        int port = Integer.parseInt(
-                System.getenv().getOrDefault(
-                        "SEARCH_PORT",
-                        String.valueOf(DEFAULT_PORT)
-                )
-        );
+        SearchConfig searchConfig = SearchConfig.fromEnvironment();
 
         Gson gson = new GsonBuilder().create();
 
@@ -36,9 +29,9 @@ public class App {
             }
         };
 
-        Javalin app = Javalin.create(config -> {
-            config.http.defaultContentType = "application/json";
-            config.jsonMapper(gsonMapper);
+        Javalin app = Javalin.create(javalinConfig -> {
+            javalinConfig.http.defaultContentType = "application/json";
+            javalinConfig.jsonMapper(gsonMapper);
         });
 
         app.get("/status", ctx -> {
@@ -48,6 +41,6 @@ public class App {
             ));
         });
 
-        app.start(port);
+        app.start(searchConfig.port());
     }
 }

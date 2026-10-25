@@ -9,12 +9,24 @@ public class SearchDatabase {
     private final String jdbcUrl;
 
     public SearchDatabase(SearchConfig config) {
-        this.jdbcUrl = "jdbc:sqlite:file:"
-                + config.indexPath().toAbsolutePath()
-                + "?mode=ro";
+        String path = config.indexPath()
+                .toAbsolutePath()
+                .normalize()
+                .toString()
+                .replace("\\", "/");
+
+        this.jdbcUrl = "jdbc:sqlite:file:" + path + "?mode=ro";
     }
 
     public Connection getConnection() throws SQLException {
         return DriverManager.getConnection(jdbcUrl);
+    }
+
+    public boolean isAvailable() {
+        try (Connection connection = getConnection()) {
+            return connection.isValid(2);
+        } catch (SQLException e) {
+            return false;
+        }
     }
 }

@@ -13,6 +13,7 @@ public class App {
     public static void main(String[] args) {
 
         SearchConfig searchConfig = SearchConfig.fromEnvironment();
+        SearchDatabase database = new SearchDatabase(searchConfig);
 
         Gson gson = new GsonBuilder().create();
 
@@ -37,7 +38,8 @@ public class App {
         app.get("/status", ctx -> {
             ctx.json(Map.of(
                     "service", "search-service",
-                    "status", "running"
+                    "status", "running",
+                    "database", database.isAvailable() ? "available" : "unavailable"
             ));
         });
 

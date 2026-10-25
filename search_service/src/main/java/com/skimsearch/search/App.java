@@ -86,51 +86,143 @@ public class App {
             ));
         }
     });
-
         app.get("/search", ctx -> {
 
-        String query = ctx.queryParam("q");
+            String query = ctx.queryParam("q");
 
-        if (query == null || query.isBlank()) {
-            ctx.status(400).json(Map.of(
-                    "error", "q parameter is required"
-            ));
-            return;
-        }
+            if (query == null || query.isBlank()) {
+                ctx.status(400).json(Map.of(
+                        "error", "q parameter is required"
+                ));
+                return;
+            }
 
-        var tokens = SearchTokenizer.tokenize(query);
+            var tokens = SearchTokenizer.tokenize(query);
 
-        if (tokens.isEmpty()) {
-            ctx.status(400).json(Map.of(
-                    "error", "q must contain a valid search term"
-            ));
-            return;
-        }
+            if (tokens.isEmpty()) {
+                ctx.status(400).json(Map.of(
+                        "error", "q must contain a valid search term"
+                ));
+                return;
+            }
 
-        if (tokens.size() > 1) {
-            ctx.status(400).json(Map.of(
-                    "error", "only one search term is currently supported"
-            ));
-            return;
-        }
+            if (tokens.size() > 1) {
+                ctx.status(400).json(Map.of(
+                        "error", "only one search term is currently supported"
+                ));
+                return;
+            }
 
-        String term = tokens.get(0);
+            String term = tokens.get(0);
 
-        try {
-            var results = searchRepository.searchByTerm(term);
+            String author = ctx.queryParam("author");
+            String language = ctx.queryParam("language");
 
-            ctx.json(Map.of(
-                    "query", term,
-                    "total", results.size(),
-                    "results", results
-            ));
+            Integer year = null;
+            String rawYear = ctx.queryParam("year");
 
-        } catch (Exception e) {
-            ctx.status(500).json(Map.of(
-                    "error", "database error"
-            ));
-        }
-    });
+            if (rawYear != null) {
+                try {
+                    year = Integer.parseInt(rawYear);
+                } catch (NumberFormatException e) {
+                    ctx.status(400).json(Map.of(
+                            "error", "year must be an integer"
+                    ));
+                    return;
+                }
+            }
+
+            int offset = 0;
+            String rawOffset = ctx.queryParam("offset");
+
+            if (rawOffset != null) {
+                try {
+                    offset = Integer.parseInt(rawOffset);
+                } catch (NumberFormatException e) {
+                    ctx.status(400).json(Map.of(
+                            "error", "offset must be an integer"
+                    ));
+                    return;
+                }
+
+                if (offset < 0) {
+                    ctx.status(400).json(Map.of(
+                            "error", "offset must be greater than or equal to zero"
+                    ));
+                    return;
+                }
+            }
+
+            int limit = 20;
+            String rawLimit = ctx.queryParam("limit");
+
+            if (rawLimit != null) {
+                try {
+                    limit = Integer.parseInt(rawLimit);
+                } catch (NumberFormatException e) {
+                    ctx.status(400).json(Map.of(
+                            "error", "limit must be an integer"
+                    ));
+                    return;
+                }
+
+                if (limit < 1 || limit > 100) {
+                    ctx.status(400).json(Map.of(
+                            "error", "limit must be between 1 and 100"
+                    ));
+                    return;
+                }
+            }
+
+            try {
+
+                int total = searchRepository.count(
+                        term,
+                        author,
+                        language,
+                        year
+                );
+
+                var results = searchRepository.search(
+                        term,
+                        author,
+                        language,
+                        year,
+                        offset,
+                        limit
+                );
+
+                Map<String, Object> filters = new java.util.LinkedHashMap<>();
+
+                if (author != null) {
+                    filters.put("author", author);
+                }
+
+                if (language != null) {
+                    filters.put("language", language);
+                }
+
+                if (year != null) {
+                    filters.put("year", year);
+                }
+
+                Map<String, Object> response = new java.util.LinkedHashMap<>();
+
+                response.put("query", term);
+                response.put("filters", filters);
+                response.put("total", total);
+                response.put("offset", offset);
+                response.put("limit", limit);
+                response.put("results", results);
+
+                ctx.json(response);
+
+            } catch (Exception e) {
+                ctx.status(500).json(Map.of(
+                        "error", "database error"
+                ));
+            }
+        });
 
         app.start(searchConfig.port());
     }

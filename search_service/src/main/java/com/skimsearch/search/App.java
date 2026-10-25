@@ -14,6 +14,7 @@ public class App {
 
         SearchConfig searchConfig = SearchConfig.fromEnvironment();
         SearchDatabase database = new SearchDatabase(searchConfig);
+        BookRepository bookRepository = new BookRepository(database);
 
         Gson gson = new GsonBuilder().create();
 
@@ -42,6 +43,48 @@ public class App {
                     "database", database.isAvailable() ? "available" : "unavailable"
             ));
         });
+
+        app.get("/books/{book_id}", ctx -> {
+
+        String rawBookId = ctx.pathParam("book_id");
+
+        int bookId;
+
+        try {
+            bookId = Integer.parseInt(rawBookId);
+        } catch (NumberFormatException e) {
+            ctx.status(400).json(Map.of(
+                    "error", "book_id must be an integer"
+            ));
+            return;
+        }
+
+        if (bookId <= 0) {
+            ctx.status(400).json(Map.of(
+                    "error", "book_id must be greater than zero"
+            ));
+            return;
+        }
+
+        try {
+            var book = bookRepository.findById(bookId);
+
+            if (book.isEmpty()) {
+                ctx.status(404).json(Map.of(
+                        "error", "book not found",
+                        "book_id", bookId
+                ));
+                return;
+            }
+
+            ctx.json(book.get());
+
+        } catch (Exception e) {
+            ctx.status(500).json(Map.of(
+                    "error", "database error"
+            ));
+        }
+    });
 
         app.start(searchConfig.port());
     }

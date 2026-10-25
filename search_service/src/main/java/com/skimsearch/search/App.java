@@ -15,6 +15,7 @@ public class App {
         SearchConfig searchConfig = SearchConfig.fromEnvironment();
         SearchDatabase database = new SearchDatabase(searchConfig);
         BookRepository bookRepository = new BookRepository(database);
+        SearchRepository searchRepository = new SearchRepository(database);
 
         Gson gson = new GsonBuilder().create();
 
@@ -78,6 +79,51 @@ public class App {
             }
 
             ctx.json(book.get());
+
+        } catch (Exception e) {
+            ctx.status(500).json(Map.of(
+                    "error", "database error"
+            ));
+        }
+    });
+
+        app.get("/search", ctx -> {
+
+        String query = ctx.queryParam("q");
+
+        if (query == null || query.isBlank()) {
+            ctx.status(400).json(Map.of(
+                    "error", "q parameter is required"
+            ));
+            return;
+        }
+
+        var tokens = SearchTokenizer.tokenize(query);
+
+        if (tokens.isEmpty()) {
+            ctx.status(400).json(Map.of(
+                    "error", "q must contain a valid search term"
+            ));
+            return;
+        }
+
+        if (tokens.size() > 1) {
+            ctx.status(400).json(Map.of(
+                    "error", "only one search term is currently supported"
+            ));
+            return;
+        }
+
+        String term = tokens.get(0);
+
+        try {
+            var results = searchRepository.searchByTerm(term);
+
+            ctx.json(Map.of(
+                    "query", term,
+                    "total", results.size(),
+                    "results", results
+            ));
 
         } catch (Exception e) {
             ctx.status(500).json(Map.of(

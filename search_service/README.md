@@ -27,6 +27,12 @@ transactionally, so Search only sees committed index state.
 ```bash
 cd search_service
 mvn clean package
+java -jar target/search-service-1.0.0.jar
+```
+
+For development, the service can also be started with:
+
+```bash
 mvn exec:java
 ```
 
@@ -36,7 +42,7 @@ To use another data directory:
 
 ```powershell
 $env:DATA_DIR = "C:\path\to\data"
-mvn exec:java
+java -jar target\search-service-1.0.0.jar
 ```
 
 ## Configuration
@@ -45,6 +51,7 @@ mvn exec:java
 |---|---|---|
 | `SEARCH_PORT` | `7003` | HTTP port used by the Search Service. |
 | `DATA_DIR` | `data` | Root data directory. Search reads `DATA_DIR/datamart/index.db`. |
+| `SEARCH_THREADS` | `250` | Maximum number of Jetty threads used by the Search Service. |
 
 ## API
 
@@ -131,7 +138,7 @@ Start the Search Service using the test index:
 
 ```powershell
 $env:DATA_DIR = "C:\Users\sarah\Desktop\stage_2\data\check"
-mvn exec:java
+java -jar target\search-service-1.0.0.jar
 ```
 
 Then run:

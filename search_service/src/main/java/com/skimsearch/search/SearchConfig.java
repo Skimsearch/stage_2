@@ -4,7 +4,8 @@ import java.nio.file.Path;
 
 public record SearchConfig(
         int port,
-        Path dataDir
+        Path dataDir,
+        int threads
 ) {
 
     public static SearchConfig fromEnvironment() {
@@ -17,7 +18,11 @@ public record SearchConfig(
                 System.getenv().getOrDefault("DATA_DIR", "data")
         );
 
-        return new SearchConfig(port, dataDir);
+        int threads = Integer.parseInt(
+            System.getenv().getOrDefault("SEARCH_THREADS", "250")
+        );
+
+        return new SearchConfig(port, dataDir, threads);
     }
 
     public Path indexPath() {

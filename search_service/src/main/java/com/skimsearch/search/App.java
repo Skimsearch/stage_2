@@ -8,6 +8,8 @@ import io.javalin.json.JsonMapper;
 import java.lang.reflect.Type;
 import java.util.Map;
 
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
 public class App {
 
     public static void main(String[] args) {
@@ -35,6 +37,8 @@ public class App {
         Javalin app = Javalin.create(javalinConfig -> {
             javalinConfig.http.defaultContentType = "application/json";
             javalinConfig.jsonMapper(gsonMapper);
+            javalinConfig.jetty.threadPool =
+                new QueuedThreadPool(searchConfig.threads());
         });
 
         app.get("/status", ctx -> {

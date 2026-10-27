@@ -30,7 +30,8 @@ public class SearchRepositoryBenchmark {
 
         SearchConfig config = new SearchConfig(
                 7003,
-                Path.of(dataDir)
+                Path.of(dataDir),
+                250
         );
 
         SearchDatabase database = new SearchDatabase(config);

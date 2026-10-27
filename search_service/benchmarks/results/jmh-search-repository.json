@@ -1,0 +1,120 @@
+[
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "com.skimsearch.search.SearchRepositoryBenchmark.filteredSearch",
+        "mode" : "avgt",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.15.6-hotspot\\bin\\java.exe",
+        "jvmArgs" : [
+            "-Xms512m",
+            "-Xmx512m"
+        ],
+        "jdkVersion" : "17.0.15",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "17.0.15+6",
+        "warmupIterations" : 5,
+        "warmupTime" : "10 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 10,
+        "measurementTime" : "10 s",
+        "measurementBatchSize" : 1,
+        "primaryMetric" : {
+            "score" : 1281.4213200236304,
+            "scoreError" : 122.63635209161775,
+            "scoreConfidence" : [
+                1158.7849679320127,
+                1404.0576721152481
+            ],
+            "scorePercentiles" : {
+                "0.0" : 1167.9102671800256,
+                "50.0" : 1260.811073239683,
+                "90.0" : 1433.6591010291384,
+                "95.0" : 1438.8987347232207,
+                "99.0" : 1438.8987347232207,
+                "99.9" : 1438.8987347232207,
+                "99.99" : 1438.8987347232207,
+                "99.999" : 1438.8987347232207,
+                "99.9999" : 1438.8987347232207,
+                "100.0" : 1438.8987347232207
+            },
+            "scoreUnit" : "us/op",
+            "rawData" : [
+                [
+                    1269.4826296437175,
+                    1386.5023977823978,
+                    1438.8987347232207,
+                    1167.9102671800256,
+                    1324.735719010451,
+                    1229.0667690795133,
+                    1232.3511690868816,
+                    1252.139516835649,
+                    1281.382274590164,
+                    1231.7437223042837
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "com.skimsearch.search.SearchRepositoryBenchmark.keywordSearch",
+        "mode" : "avgt",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.15.6-hotspot\\bin\\java.exe",
+        "jvmArgs" : [
+            "-Xms512m",
+            "-Xmx512m"
+        ],
+        "jdkVersion" : "17.0.15",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "17.0.15+6",
+        "warmupIterations" : 5,
+        "warmupTime" : "10 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 10,
+        "measurementTime" : "10 s",
+        "measurementBatchSize" : 1,
+        "primaryMetric" : {
+            "score" : 3791.70930220868,
+            "scoreError" : 3689.733991173597,
+            "scoreConfidence" : [
+                101.975311035083,
+                7481.443293382277
+            ],
+            "scorePercentiles" : {
+                "0.0" : 1392.2523776418243,
+                "50.0" : 3589.1019137471376,
+                "90.0" : 7609.678196093022,
+                "95.0" : 7628.446300533944,
+                "99.0" : 7628.446300533944,
+                "99.9" : 7628.446300533944,
+                "99.99" : 7628.446300533944,
+                "99.999" : 7628.446300533944,
+                "99.9999" : 7628.446300533944,
+                "100.0" : 7628.446300533944
+            },
+            "scoreUnit" : "us/op",
+            "rawData" : [
+                [
+                    1442.9146503244413,
+                    1392.2523776418243,
+                    1604.3954931836408,
+                    1403.9058320482266,
+                    2887.189382573572,
+                    7628.446300533944,
+                    5249.892130115425,
+                    7440.765256124721,
+                    4576.317154620311,
+                    4291.014444920703
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    }
+]
+
+

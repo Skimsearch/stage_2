@@ -1,0 +1,259 @@
+openapi: 3.0.3
+
+info:
+  title: SkimSearch Search Service API
+  version: 1.0.0
+  description: >
+    Public API for searching the indexed Project Gutenberg collection
+    and retrieving indexed book metadata.
+
+servers:
+  - url: http://localhost:7003
+
+paths:
+
+  /status:
+    get:
+      summary: Get Search Service status
+      responses:
+        '200':
+          description: Service status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                    example: search-service
+                  status:
+                    type: string
+                    example: running
+                  database:
+                    type: string
+                    example: available
+
+  /books/{book_id}:
+    get:
+      summary: Get metadata for an indexed book
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+
+      responses:
+        '200':
+          description: Indexed book metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+
+        '400':
+          description: Invalid book identifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '404':
+          description: Book not found in the index
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '500':
+          description: Database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /search:
+    get:
+      summary: Search indexed books by keyword
+      description: >
+        Searches the inverted index using one keyword. Results are ordered
+        by term frequency in descending order and then by book_id in ascending
+        order for deterministic tie-breaking.
+
+        The author and language filters use case-insensitive exact matching.
+        The year filter refers to the Project Gutenberg release year stored
+        in the indexed metadata, not the original publication year of the work.
+
+        A valid query with no matches returns HTTP 200 with an empty results list.
+
+      parameters:
+
+        - name: q
+          in: query
+          required: true
+          description: >
+            Single search term. The query is normalized using the same
+            tokenization rule as the Indexing Service.
+          schema:
+            type: string
+          example: alpha
+
+        - name: author
+          in: query
+          required: false
+          description: Case-insensitive exact author match.
+          schema:
+            type: string
+          example: Test Author
+
+        - name: language
+          in: query
+          required: false
+          description: Case-insensitive exact language match.
+          schema:
+            type: string
+          example: en
+
+        - name: year
+          in: query
+          required: false
+          description: Project Gutenberg release year.
+          schema:
+            type: integer
+          example: 1998
+
+        - name: offset
+          in: query
+          required: false
+          description: Number of matching results to skip.
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results returned.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+
+      responses:
+
+        '200':
+          description: Search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+        '400':
+          description: Invalid or missing query parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '500':
+          description: Database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+
+  schemas:
+
+    Book:
+      type: object
+      properties:
+        bookId:
+          type: integer
+          example: 990001
+        title:
+          type: string
+          example: Test Book
+        author:
+          type: string
+          example: Test Author
+        language:
+          type: string
+          example: en
+        year:
+          type: integer
+          nullable: true
+          example: 1998
+        termCount:
+          type: integer
+          example: 3
+        indexedAt:
+          type: string
+          example: 2026-10-27T15:00:00Z
+
+    SearchResult:
+      type: object
+      properties:
+        bookId:
+          type: integer
+          example: 990001
+        title:
+          type: string
+          example: Test Book
+        author:
+          type: string
+          example: Test Author
+        language:
+          type: string
+          example: en
+        year:
+          type: integer
+          nullable: true
+          example: 1998
+        tf:
+          type: integer
+          description: Raw frequency of the search term in the indexed book body.
+          example: 2
+
+    SearchResponse:
+      type: object
+      properties:
+        query:
+          type: string
+          example: alpha
+
+        filters:
+          type: object
+          additionalProperties: true
+          example:
+            language: en
+            year: 1998
+
+        total:
+          type: integer
+          description: Total number of matches before pagination.
+          example: 1
+
+        offset:
+          type: integer
+          example: 0
+
+        limit:
+          type: integer
+          example: 20
+
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: q parameter is required

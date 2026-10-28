@@ -6,10 +6,16 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+
 public class IngestionController {
 
     private final GutenbergClient gutenbergClient;
     private final DatalakeWriter datalakeWriter;
+
+    private final ConcurrentHashMap<Integer, ReentrantLock> bookLocks =
+            new ConcurrentHashMap<>();
 
     public IngestionController() {
         this.gutenbergClient = new GutenbergClient();
@@ -86,25 +92,40 @@ public class IngestionController {
                 return;
             }
 
-            if (datalakeWriter.isReady(bookId)) {
+            ReentrantLock lock =
+                    bookLocks.computeIfAbsent(
+                            bookId,
+                            id -> new ReentrantLock()
+                    );
 
-                ctx.status(200);
-
-                ctx.json(
-                        Map.of(
-                                "book_id",
-                                bookId,
-                                "status",
-                                "READY",
-                                "message",
-                                "Book already ingested"
-                        )
-                );
-
-                return;
-            }
+            lock.lock();
 
             try {
+
+                String currentStatus =
+                        datalakeWriter.getStatus(bookId);
+
+                if ("READY".equals(currentStatus)) {
+
+                    ctx.status(200);
+
+                    ctx.json(
+                            Map.of(
+                                    "book_id",
+                                    bookId,
+                                    "status",
+                                    "READY",
+                                    "message",
+                                    "Book already ingested"
+                            )
+                    );
+
+                    return;
+                }
+
+                if ("INCOMPLETE".equals(currentStatus)) {
+                    datalakeWriter.cleanIncomplete(bookId);
+                }
 
                 GutenbergClient.BookContent book =
                         gutenbergClient.downloadBook(
@@ -142,6 +163,10 @@ public class IngestionController {
                                 e.getMessage()
                         )
                 );
+
+            } finally {
+
+                lock.unlock();
             }
         });
 
@@ -199,31 +224,31 @@ public class IngestionController {
                     )
             );
         });
+
         app.get("/ingest/list", ctx -> {
 
-    try {
+            try {
 
-        ctx.status(200);
+                ctx.status(200);
 
-        ctx.json(
-                Map.of(
-                        "books",
-                        datalakeWriter.listReadyBooks()
-                )
-        );
+                ctx.json(
+                        Map.of(
+                                "books",
+                                datalakeWriter.listReadyBooks()
+                        )
+                );
 
-    } catch (Exception e) {
+            } catch (Exception e) {
 
-        ctx.status(500);
+                ctx.status(500);
 
-        ctx.json(
-                Map.of(
-                        "error",
-                        e.getMessage()
-                )
-        );
+                ctx.json(
+                        Map.of(
+                                "error",
+                                e.getMessage()
+                        )
+                );
+            }
+        });
     }
-});
-    }
-    
 }

@@ -177,7 +177,27 @@ public java.util.List<Integer> listReadyBooks() throws IOException {
     }
 
     return new java.util.ArrayList<>(
-            readyBooks
+        readyBooks
+    );
+}
+public void cleanIncomplete(int bookId) throws IOException {
+
+    Path batchDir = getBatchDirectory(bookId);
+
+    Files.deleteIfExists(
+        batchDir.resolve(bookId + ".header.txt")
+    );
+
+    Files.deleteIfExists(
+        batchDir.resolve(bookId + ".body.txt")
+    );
+
+    Files.deleteIfExists(
+        batchDir.resolve(bookId + ".header.tmp")
+    );
+
+    Files.deleteIfExists(
+        batchDir.resolve(bookId + ".body.tmp")
     );
 }
 }

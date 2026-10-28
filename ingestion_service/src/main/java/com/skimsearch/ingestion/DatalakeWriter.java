@@ -84,4 +84,100 @@ public class DatalakeWriter {
         return Files.exists(header)
                 && Files.exists(body);
     }
+
+
+public String getStatus(int bookId) {
+
+    Path batchDir = getBatchDirectory(bookId);
+
+    Path header =
+            batchDir.resolve(bookId + ".header.txt");
+
+    Path body =
+            batchDir.resolve(bookId + ".body.txt");
+
+    boolean headerExists =
+            Files.exists(header);
+
+    boolean bodyExists =
+            Files.exists(body);
+
+    if (headerExists && bodyExists) {
+        return "READY";
+    }
+
+    if (!headerExists && !bodyExists) {
+        return "NOT_FOUND";
+    }
+
+    return "INCOMPLETE";
+}
+
+public java.util.List<Integer> listReadyBooks() throws IOException {
+
+    Path batchRoot =
+            dataDir
+                    .resolve("datalake")
+                    .resolve("batch");
+
+    if (!Files.exists(batchRoot)) {
+        return java.util.List.of();
+    }
+
+    java.util.Set<Integer> readyBooks =
+            new java.util.TreeSet<>();
+
+    try (var batchDirectories =
+                 Files.list(batchRoot)) {
+
+        for (Path batchDir :
+                batchDirectories
+                        .filter(Files::isDirectory)
+                        .toList()) {
+
+            try (var files =
+                         Files.list(batchDir)) {
+
+                for (Path file : files.toList()) {
+
+                    String fileName =
+                            file.getFileName()
+                                    .toString();
+
+                    if (!fileName.endsWith(
+                            ".header.txt"
+                    )) {
+                        continue;
+                    }
+
+                    String idText =
+                            fileName.replace(
+                                    ".header.txt",
+                                    ""
+                            );
+
+                    try {
+
+                        int bookId =
+                                Integer.parseInt(
+                                        idText
+                                );
+
+                        if (isReady(bookId)) {
+                            readyBooks.add(bookId);
+                        }
+
+                    } catch (
+                            NumberFormatException ignored
+                    ) {
+                    }
+                }
+            }
+        }
+    }
+
+    return new java.util.ArrayList<>(
+            readyBooks
+    );
+}
 }

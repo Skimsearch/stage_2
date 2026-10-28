@@ -86,10 +86,6 @@ public class IngestionController {
                 return;
             }
 
-            /*
-             * If both files already exist,
-             * the ingestion is already complete.
-             */
             if (datalakeWriter.isReady(bookId)) {
 
                 ctx.status(200);
@@ -148,5 +144,86 @@ public class IngestionController {
                 );
             }
         });
+
+        app.get("/ingest/status/{book_id}", ctx -> {
+
+            String bookIdParam =
+                    ctx.pathParam("book_id");
+
+            int bookId;
+
+            try {
+                bookId =
+                        Integer.parseInt(
+                                bookIdParam
+                        );
+            } catch (NumberFormatException e) {
+
+                ctx.status(400);
+
+                ctx.json(
+                        Map.of(
+                                "error",
+                                "Invalid book id"
+                        )
+                );
+
+                return;
+            }
+
+            if (bookId <= 0) {
+
+                ctx.status(400);
+
+                ctx.json(
+                        Map.of(
+                                "error",
+                                "Book id must be positive"
+                        )
+                );
+
+                return;
+            }
+
+            String status =
+                    datalakeWriter.getStatus(bookId);
+
+            ctx.status(200);
+
+            ctx.json(
+                    Map.of(
+                            "book_id",
+                            bookId,
+                            "status",
+                            status
+                    )
+            );
+        });
+        app.get("/ingest/list", ctx -> {
+
+    try {
+
+        ctx.status(200);
+
+        ctx.json(
+                Map.of(
+                        "books",
+                        datalakeWriter.listReadyBooks()
+                )
+        );
+
+    } catch (Exception e) {
+
+        ctx.status(500);
+
+        ctx.json(
+                Map.of(
+                        "error",
+                        e.getMessage()
+                )
+        );
     }
+});
+    }
+    
 }

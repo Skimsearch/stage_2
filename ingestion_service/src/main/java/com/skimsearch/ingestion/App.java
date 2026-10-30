@@ -6,7 +6,12 @@ public class App {
 
     public static void main(String[] args) {
 
-        int port = 7001;
+        int port = Integer.parseInt(
+        System.getenv().getOrDefault(
+                "INGESTION_PORT",
+                "7001"
+        )
+);
 
         Javalin app = Javalin.create(config -> {
             config.showJavalinBanner = false;

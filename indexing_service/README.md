@@ -99,8 +99,10 @@ re-index, rebuild).
 
 JMH microbenchmarks (`src/test/java/com/skimsearch/benchmark`): tokenization,
 metadata extraction and index update with 1, 2 and 4 threads. 5 warm-up and 10
-measurement iterations, heap fixed at 2 GB, CSV results in `target/`. Run on an idle
-machine:
+measurement iterations, heap fixed at 2 GB. Raw CSV results and `run-info.txt` (date,
+git commit, OS, CPUs, Java, command) are written to `benchmarks/results/`, which is
+committed to the repository (unlike `target/`, which `mvn clean` deletes). Run on an
+idle machine, from `indexing_service/`:
 
 ```bash
 mvn test-compile

@@ -17,12 +17,8 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Thread)
 public class SearchTokenizerBenchmark {
 
-    private String query;
-
-    @Setup(Level.Trial)
-    public void setup() {
-        query = "ALPHA";
-    }
+    @Param({"ALPHA"})
+    public String query;
 
     @Benchmark
     public List<String> tokenizeQuery() {

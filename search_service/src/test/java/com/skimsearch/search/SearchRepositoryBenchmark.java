@@ -20,6 +20,17 @@ import java.util.concurrent.TimeUnit;
 public class SearchRepositoryBenchmark {
 
     private SearchRepository repository;
+        @Param({"alpha"})
+        public String term;
+
+        @Param({"Test Author"})
+        public String author;
+
+        @Param({"en"})
+        public String language;
+
+        @Param({"1998"})
+        public int year;
 
     @Setup(Level.Trial)
     public void setup() {
@@ -38,27 +49,27 @@ public class SearchRepositoryBenchmark {
         repository = new SearchRepository(database);
     }
 
-    @Benchmark
-    public List<SearchResult> keywordSearch() throws SQLException {
+        @Benchmark
+        public List<SearchResult> keywordSearch() throws SQLException {
         return repository.search(
-                "alpha",
+                term,
                 null,
                 null,
                 null,
                 0,
                 20
         );
-    }
+        }
 
-    @Benchmark
-    public List<SearchResult> filteredSearch() throws SQLException {
+        @Benchmark
+        public List<SearchResult> filteredSearch() throws SQLException {
         return repository.search(
-                "alpha",
-                "Test Author",
-                "en",
-                1998,
+                term,
+                author,
+                language,
+                year,
                 0,
                 20
         );
-    }
+        }
 }

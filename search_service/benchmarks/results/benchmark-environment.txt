@@ -1,0 +1,42 @@
+SEARCH SERVICE BENCHMARK ENVIRONMENT
+
+Git commit:
+ae2de2e5327e9c5f2e3ef29d9038c622e76f3610
+
+Git branch:
+improve/search-benchmarks
+
+Operating system:
+Windows 10 Home
+Version: 2009
+Architecture: 64 bits
+
+CPU:
+Intel(R) Core(TM) Ultra 7 155H
+
+RAM:
+31.52 GB
+
+Storage:
+NVMe SAMSUNG MZVL21T0HCLR-00B00
+Media type: SSD
+Size: 953.87 GB
+
+Filesystem:
+NTFS
+
+Java:
+openjdk version "17.0.15" 2025-04-15
+OpenJDK Runtime Environment Temurin-17.0.15+6 (build 17.0.15+6)
+OpenJDK 64-Bit Server VM Temurin-17.0.15+6 (build 17.0.15+6, mixed mode, sharing)
+
+Maven:
+Apache Maven 3.9.12 (848fbb4bf2d427b72bdb2471c22fced7ebd9a7a1)
+Maven home: C:\Program Files\apache-maven-3.9.12
+Java version: 17.0.15, vendor: Eclipse Adoptium, runtime: C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot
+Default locale: es_ES, platform encoding: Cp1252
+OS name: "windows 11", version: "10.0", arch: "amd64", family: "windows"
+
+Cache conditions:
+The operating-system filesystem cache was not explicitly cleared or controlled.
+JMH warm-up iterations were used for JVM warm-up.

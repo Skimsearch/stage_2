@@ -36,11 +36,17 @@ public class SearchLoadTest {
                         : "benchmarks/results/search-load-initial.csv"
         );
 
+        String query = args.length > 3
+                ? args[3]
+                : "alpha";
+
         HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .build();
 
-        URI searchUri = URI.create(baseUrl + "/search?q=alpha");
+        URI searchUri = URI.create(
+                baseUrl + "/search?q=" + query
+        );
 
         warmUp(client, searchUri);
 

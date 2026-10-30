@@ -15,6 +15,5 @@ gson-*.jar
 
 *.log
 
-data/control/*.json
-data/control/*.db
+data/
 control_service/data/control/*.json

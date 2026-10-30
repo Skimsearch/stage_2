@@ -1,0 +1,185 @@
+openapi: 3.0.3
+
+info:
+  title: SkimSearch Ingestion Service API
+  version: 1.0.0
+  description: >
+    Internal API for downloading Project Gutenberg books,
+    splitting header and body, and publishing complete books
+    into the shared Stage 2 datalake.
+
+servers:
+  - url: http://localhost:7001
+
+paths:
+
+  /status:
+    get:
+      summary: Get Ingestion Service status
+      responses:
+        '200':
+          description: Service status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                    example: ingestion
+                  status:
+                    type: string
+                    example: running
+
+  /ingest/{book_id}:
+    post:
+      summary: Ingest one Project Gutenberg book
+      description: >
+        Downloads the requested Project Gutenberg book, splits
+        header and body, and writes both files to the datalake.
+        The operation is synchronous. A READY response means that
+        both final files are available in the datalake.
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          example: 1342
+
+      responses:
+        '200':
+          description: Book successfully ingested or already available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionResponse'
+
+        '400':
+          description: Invalid book identifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+        '500':
+          description: Download or storage failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionFailure'
+
+  /ingest/status/{book_id}:
+    get:
+      summary: Get ingestion status for one book
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          example: 1342
+
+      responses:
+        '200':
+          description: Current ingestion state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionStatus'
+
+        '400':
+          description: Invalid book identifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /ingest/list:
+    get:
+      summary: List books ready in the datalake
+      description: >
+        Returns only books for which both header and body files
+        are available.
+      responses:
+        '200':
+          description: Ready book identifiers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  books:
+                    type: array
+                    items:
+                      type: integer
+                    example:
+                      - 11
+                      - 98
+                      - 1342
+                      - 1661
+
+        '500':
+          description: Filesystem error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+
+  schemas:
+
+    IngestionResponse:
+      type: object
+      properties:
+        book_id:
+          type: integer
+          example: 1342
+        status:
+          type: string
+          enum:
+            - READY
+          example: READY
+        message:
+          type: string
+          nullable: true
+          example: Book already ingested
+
+    IngestionStatus:
+      type: object
+      properties:
+        book_id:
+          type: integer
+          example: 1342
+        status:
+          type: string
+          enum:
+            - READY
+            - INCOMPLETE
+            - NOT_FOUND
+          example: READY
+
+    IngestionFailure:
+      type: object
+      properties:
+        book_id:
+          type: integer
+          example: 1342
+        status:
+          type: string
+          enum:
+            - FAILED
+          example: FAILED
+        error:
+          type: string
+          example: Gutenberg returned HTTP 404
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Invalid book id

@@ -17,3 +17,4 @@ gson-*.jar
 
 data/control/*.json
 data/control/*.db
+control_service/data/control/*.json

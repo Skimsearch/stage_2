@@ -1,0 +1,210 @@
+openapi: 3.0.3
+
+info:
+  title: SkimSearch Indexing Service API
+  version: 1.0.0
+  description: >
+    Internal API of the Indexing Service. It reads complete books from the
+    datalake, extracts their metadata, builds the inverted index and publishes
+    both in the datamart (index.db) in one transaction. Consumers are the
+    Control Module (internal) and monitoring tools (operational). It is not
+    meant to be called by the front-end.
+
+servers:
+  - url: http://localhost:7002
+    description: Default port, configurable with INDEXING_PORT
+
+tags:
+  - name: internal
+    description: Called by the Control Module to run the pipeline.
+  - name: operational
+    description: Health and statistics, for monitoring and the Control Module.
+
+paths:
+
+  /index/update/{book_id}:
+    post:
+      tags: [internal]
+      summary: Index (or re-index) one book
+      description: >
+        Reads the book from the datalake, extracts its metadata and rebuilds its
+        postings. The call is synchronous: a 200 means the work is finished and
+        the book is already published for Search. The operation is idempotent:
+        calling it again replaces the previous version and never creates
+        duplicates, so it is safe to retry after a timeout or a failure. Two
+        concurrent calls are serialised by the datamart write lock.
+        A book is indexable only when both its header and body files exist.
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          example: 1342
+      responses:
+        '200':
+          description: Book indexed and published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateResult'
+              example:
+                book_id: 1342
+                index: updated
+                status: PUBLISHED
+                unique_terms: 9
+                replaced: false
+        '400':
+          description: book_id is not a positive integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: bad_request
+                message: book_id must be an integer
+        '404':
+          description: The book is not in the datalake. Do not retry until Ingestion has downloaded it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_found
+                message: Book 99999 is not in the datalake
+        '409':
+          description: The book is only partially downloaded (header or body missing). Retry later.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: not_ready
+                message: 'Book 1500 is not ready: header or body is missing'
+        '500':
+          description: The datamart could not be updated. The previous version stays published (the transaction is rolled back). Safe to retry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /index/rebuild:
+    post:
+      tags: [internal]
+      summary: Rebuild the whole index from the datalake
+      description: >
+        Replaces the index and the metadata with the content of every complete
+        book in the datalake, in a single transaction. Search keeps seeing the
+        previous complete index until the commit. Synchronous and potentially
+        slow; use a long client timeout. Incomplete books are skipped.
+      responses:
+        '200':
+          description: Index rebuilt and published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RebuildResult'
+              example:
+                books_processed: 1000
+                elapsed_time: 35.2s
+        '500':
+          description: Rebuild failed. The previous index stays published.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /index/status:
+    get:
+      tags: [operational]
+      summary: Index statistics
+      responses:
+        '200':
+          description: Current state of the datamart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexStatus'
+              example:
+                books_indexed: 1
+                unique_terms: 9
+                postings: 9
+                last_update: '2026-10-24T15:16:37.748228500Z'
+                index_size_MB: 0.0
+
+  /status:
+    get:
+      tags: [operational]
+      summary: Health check
+      responses:
+        '200':
+          description: The service is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                    example: indexing-service
+                  status:
+                    type: string
+                    example: running
+
+components:
+  schemas:
+
+    UpdateResult:
+      type: object
+      properties:
+        book_id:
+          type: integer
+        index:
+          type: string
+          description: Always "updated" on success.
+          example: updated
+        status:
+          type: string
+          example: PUBLISHED
+        unique_terms:
+          type: integer
+          description: Number of distinct terms of the book.
+        replaced:
+          type: boolean
+          description: True when the book already had a published version (re-index).
+
+    RebuildResult:
+      type: object
+      properties:
+        books_processed:
+          type: integer
+        elapsed_time:
+          type: string
+          example: 35.2s
+
+    IndexStatus:
+      type: object
+      properties:
+        books_indexed:
+          type: integer
+        unique_terms:
+          type: integer
+        postings:
+          type: integer
+        last_update:
+          type: string
+          nullable: true
+          description: ISO-8601 time of the last update. Absent or null while the index is empty.
+        index_size_MB:
+          type: number
+
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: Machine-readable code (bad_request, not_found, not_ready, internal_error).
+        message:
+          type: string

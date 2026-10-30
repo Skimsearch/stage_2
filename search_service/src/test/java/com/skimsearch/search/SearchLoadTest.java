@@ -2,9 +2,11 @@ package com.skimsearch.search;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -36,19 +38,27 @@ public class SearchLoadTest {
                         : "benchmarks/results/search-load-initial.csv"
         );
 
-        String query = args.length > 3
-                ? args[3]
-                : "alpha";
+        Path queryFile = Path.of(
+                args.length > 3
+                        ? args[3]
+                        : "../experiments/queries.txt"
+        );
+
+        List<String> queries = loadQueries(queryFile);
 
         HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .build();
 
-        URI searchUri = URI.create(
-                baseUrl + "/search?q=" + query
-        );
+        System.out.println("Query workload: " + queryFile);
+        System.out.println("Queries loaded: " + queries.size());
+        System.out.println();
 
-        warmUp(client, searchUri);
+        warmUp(
+                client,
+                baseUrl,
+                queries
+        );
 
         Files.createDirectories(output.getParent());
 
@@ -63,7 +73,8 @@ public class SearchLoadTest {
 
             Result result = runTest(
                     client,
-                    searchUri,
+                    baseUrl,
+                    queries,
                     concurrency,
                     totalRequests
             );
@@ -102,14 +113,45 @@ public class SearchLoadTest {
         System.out.println("Results saved to " + output);
     }
 
+    private static List<String> loadQueries(
+            Path queryFile
+    ) throws IOException {
+
+        List<String> queries = Files.readAllLines(queryFile)
+                .stream()
+                .map(String::trim)
+                .filter(line -> !line.isEmpty())
+                .filter(line -> !line.startsWith("#"))
+                .toList();
+
+        if (queries.isEmpty()) {
+            throw new IllegalStateException(
+                    "Query workload is empty: " + queryFile
+            );
+        }
+
+        return queries;
+    }
+
     private static void warmUp(
             HttpClient client,
-            URI uri
+            String baseUrl,
+            List<String> queries
     ) throws IOException, InterruptedException {
 
-        HttpRequest request = createRequest(uri);
-
         for (int i = 0; i < WARMUP_REQUESTS; i++) {
+
+            String query = queries.get(
+                    i % queries.size()
+            );
+
+            URI uri = createSearchUri(
+                    baseUrl,
+                    query
+            );
+
+            HttpRequest request = createRequest(uri);
+
             client.send(
                     request,
                     HttpResponse.BodyHandlers.discarding()
@@ -119,7 +161,8 @@ public class SearchLoadTest {
 
     private static Result runTest(
             HttpClient client,
-            URI uri,
+            String baseUrl,
+            List<String> queries,
             int concurrency,
             int totalRequests
     ) throws InterruptedException, ExecutionException {
@@ -134,9 +177,23 @@ public class SearchLoadTest {
 
         for (int i = 0; i < totalRequests; i++) {
 
-            futures.add(executor.submit(
-                    () -> executeRequest(client, uri)
-            ));
+            String query = queries.get(
+                    i % queries.size()
+            );
+
+            URI uri = createSearchUri(
+                    baseUrl,
+                    query
+            );
+
+            futures.add(
+                    executor.submit(
+                            () -> executeRequest(
+                                    client,
+                                    uri
+                            )
+                    )
+            );
         }
 
         List<Double> latencies = new ArrayList<>();
@@ -222,7 +279,24 @@ public class SearchLoadTest {
         }
     }
 
-    private static HttpRequest createRequest(URI uri) {
+    private static URI createSearchUri(
+            String baseUrl,
+            String query
+    ) {
+
+        String encodedQuery = URLEncoder.encode(
+                query,
+                StandardCharsets.UTF_8
+        );
+
+        return URI.create(
+                baseUrl + "/search?q=" + encodedQuery
+        );
+    }
+
+    private static HttpRequest createRequest(
+            URI uri
+    ) {
 
         return HttpRequest.newBuilder(uri)
                 .timeout(Duration.ofSeconds(10))
@@ -239,7 +313,9 @@ public class SearchLoadTest {
         }
 
         int index =
-                (int) Math.ceil(values.size() * 0.95) - 1;
+                (int) Math.ceil(
+                        values.size() * 0.95
+                ) - 1;
 
         return values.get(index);
     }

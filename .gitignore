@@ -1,11 +1,16 @@
+# Compiled files
 *.class
+
+# Java packages and build output
 *.jar
 *.war
 *.ear
 **/target/
 
+# Local dependencies
 gson-*.jar
 
+# IDE configuration
 .vscode/
 .idea/
 *.iml
@@ -13,7 +18,8 @@ gson-*.jar
 .classpath
 .settings/
 
+# Logs
 *.log
 
-data/
+# Runtime state files
 control_service/data/control/*.json

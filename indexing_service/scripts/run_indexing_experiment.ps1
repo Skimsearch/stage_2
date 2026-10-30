@@ -36,7 +36,9 @@ if ($before.books_indexed -ne 0) {
 }
 
 New-Item -ItemType Directory -Force $OutDir | Out-Null
-$csv = Join-Path $OutDir "indexing-experiment.csv"
+# Absolute path of the output folder; works for both relative and absolute -OutDir values.
+$outFull = [IO.Path]::GetFullPath([IO.Path]::Combine((Get-Location).Path, $OutDir))
+$csv = Join-Path $outFull "indexing-experiment.csv"
 $rows = New-Object System.Collections.Generic.List[string]
 $rows.Add("book_id,http_code,seconds,unique_terms,replaced")
 $bad = @()
@@ -59,7 +61,7 @@ foreach ($id in $books) {
     Write-Host "book $id -> HTTP $code in ${secsText}s ($terms terms)"
     if ($code -ne 200) { $bad += $id }
 }
-[IO.File]::WriteAllLines((Join-Path (Get-Location) $csv), $rows)
+[IO.File]::WriteAllLines($csv, $rows)
 
 $after = Invoke-RestMethod "$BaseUrl/index/status"
 $avg = $total / $books.Count
@@ -91,7 +93,7 @@ $summary = @(
     "",
     "CHECKS"
 ) + $checks
-[IO.File]::WriteAllLines((Join-Path (Get-Location) (Join-Path $OutDir "indexing-experiment-summary.txt")), $summary)
+[IO.File]::WriteAllLines((Join-Path $outFull "indexing-experiment-summary.txt"), $summary)
 $summary | ForEach-Object { Write-Host $_ }
 
 $cpu = try { (Get-CimInstance Win32_Processor | Select-Object -First 1).Name } catch { "unknown" }
@@ -110,6 +112,6 @@ $environment = @(
     "java: $javaVersion",
     "maven: $mavenVersion"
 )
-[IO.File]::WriteAllLines((Join-Path (Get-Location) (Join-Path $OutDir "benchmark-environment.txt")), $environment)
+[IO.File]::WriteAllLines((Join-Path $outFull "benchmark-environment.txt"), $environment)
 
 if ($failed) { Write-Host "SOME CHECKS FAILED"; exit 1 } else { Write-Host "ALL CHECKS PASSED"; exit 0 }

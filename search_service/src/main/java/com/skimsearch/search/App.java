@@ -4,11 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.javalin.Javalin;
 import io.javalin.json.JsonMapper;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 import java.lang.reflect.Type;
 import java.util.Map;
-
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class App {
 
@@ -38,82 +37,105 @@ public class App {
             javalinConfig.http.defaultContentType = "application/json";
             javalinConfig.jsonMapper(gsonMapper);
             javalinConfig.jetty.threadPool =
-                new QueuedThreadPool(searchConfig.threads());
+                    new QueuedThreadPool(searchConfig.threads());
         });
 
         app.get("/status", ctx -> {
             ctx.json(Map.of(
                     "service", "search-service",
                     "status", "running",
-                    "database", database.isAvailable() ? "available" : "unavailable"
+                    "database", database.isAvailable()
+                            ? "available"
+                            : "unavailable"
             ));
         });
 
         app.get("/books/{book_id}", ctx -> {
 
-        String rawBookId = ctx.pathParam("book_id");
+            String rawBookId = ctx.pathParam("book_id");
 
-        int bookId;
+            int bookId;
 
-        try {
-            bookId = Integer.parseInt(rawBookId);
-        } catch (NumberFormatException e) {
-            ctx.status(400).json(Map.of(
-                    "error", "book_id must be an integer"
-            ));
-            return;
-        }
-
-        if (bookId <= 0) {
-            ctx.status(400).json(Map.of(
-                    "error", "book_id must be greater than zero"
-            ));
-            return;
-        }
-
-        try {
-            var book = bookRepository.findById(bookId);
-
-            if (book.isEmpty()) {
-                ctx.status(404).json(Map.of(
-                        "error", "book not found",
-                        "book_id", bookId
-                ));
+            try {
+                bookId = Integer.parseInt(rawBookId);
+            } catch (NumberFormatException e) {
+                ctx.status(400).json(
+                        error(
+                                "bad_request",
+                                "book_id must be an integer"
+                        )
+                );
                 return;
             }
 
-            ctx.json(book.get());
+            if (bookId <= 0) {
+                ctx.status(400).json(
+                        error(
+                                "bad_request",
+                                "book_id must be greater than zero"
+                        )
+                );
+                return;
+            }
 
-        } catch (Exception e) {
-            ctx.status(500).json(Map.of(
-                    "error", "database error"
-            ));
-        }
-    });
+            try {
+                var book = bookRepository.findById(bookId);
+
+                if (book.isEmpty()) {
+                    ctx.status(404).json(
+                            error(
+                                    "not_found",
+                                    "book not found"
+                            )
+                    );
+                    return;
+                }
+
+                ctx.json(book.get());
+
+            } catch (Exception e) {
+                ctx.status(500).json(
+                        error(
+                                "internal_error",
+                                "database error"
+                        )
+                );
+            }
+        });
+
         app.get("/search", ctx -> {
 
             String query = ctx.queryParam("q");
 
             if (query == null || query.isBlank()) {
-                ctx.status(400).json(Map.of(
-                        "error", "q parameter is required"
-                ));
+                ctx.status(400).json(
+                        error(
+                                "bad_request",
+                                "q parameter is required"
+                        )
+                );
                 return;
             }
 
             var tokens = SearchTokenizer.tokenize(query);
 
             if (tokens.isEmpty()) {
-                ctx.status(400).json(Map.of(
-                        "error", "q must contain a valid search term"
-                ));
+                ctx.status(400).json(
+                        error(
+                                "bad_request",
+                                "q must contain a valid search term"
+                        )
+                );
                 return;
             }
 
             if (tokens.size() > 1) {
-                ctx.status(400).json(Map.of(
-                        "error", "only one search term is currently supported"
-                ));
+                ctx.status(400).json(
+                        error(
+                                "bad_request",
+                                "only one search term is currently supported"
+                        )
+                );
                 return;
             }
 
@@ -129,9 +151,12 @@ public class App {
                 try {
                     year = Integer.parseInt(rawYear);
                 } catch (NumberFormatException e) {
-                    ctx.status(400).json(Map.of(
-                            "error", "year must be an integer"
-                    ));
+                    ctx.status(400).json(
+                            error(
+                                    "bad_request",
+                                    "year must be an integer"
+                            )
+                    );
                     return;
                 }
             }
@@ -143,16 +168,22 @@ public class App {
                 try {
                     offset = Integer.parseInt(rawOffset);
                 } catch (NumberFormatException e) {
-                    ctx.status(400).json(Map.of(
-                            "error", "offset must be an integer"
-                    ));
+                    ctx.status(400).json(
+                            error(
+                                    "bad_request",
+                                    "offset must be an integer"
+                            )
+                    );
                     return;
                 }
 
                 if (offset < 0) {
-                    ctx.status(400).json(Map.of(
-                            "error", "offset must be greater than or equal to zero"
-                    ));
+                    ctx.status(400).json(
+                            error(
+                                    "bad_request",
+                                    "offset must be greater than or equal to zero"
+                            )
+                    );
                     return;
                 }
             }
@@ -164,16 +195,22 @@ public class App {
                 try {
                     limit = Integer.parseInt(rawLimit);
                 } catch (NumberFormatException e) {
-                    ctx.status(400).json(Map.of(
-                            "error", "limit must be an integer"
-                    ));
+                    ctx.status(400).json(
+                            error(
+                                    "bad_request",
+                                    "limit must be an integer"
+                            )
+                    );
                     return;
                 }
 
                 if (limit < 1 || limit > 100) {
-                    ctx.status(400).json(Map.of(
-                            "error", "limit must be between 1 and 100"
-                    ));
+                    ctx.status(400).json(
+                            error(
+                                    "bad_request",
+                                    "limit must be between 1 and 100"
+                            )
+                    );
                     return;
                 }
             }
@@ -196,7 +233,8 @@ public class App {
                         limit
                 );
 
-                Map<String, Object> filters = new java.util.LinkedHashMap<>();
+                Map<String, Object> filters =
+                        new java.util.LinkedHashMap<>();
 
                 if (author != null) {
                     filters.put("author", author);
@@ -210,7 +248,8 @@ public class App {
                     filters.put("year", year);
                 }
 
-                Map<String, Object> response = new java.util.LinkedHashMap<>();
+                Map<String, Object> response =
+                        new java.util.LinkedHashMap<>();
 
                 response.put("query", term);
                 response.put("filters", filters);
@@ -222,12 +261,25 @@ public class App {
                 ctx.json(response);
 
             } catch (Exception e) {
-                ctx.status(500).json(Map.of(
-                        "error", "database error"
-                ));
+                ctx.status(500).json(
+                        error(
+                                "internal_error",
+                                "database error"
+                        )
+                );
             }
         });
 
         app.start(searchConfig.port());
+    }
+
+    private static Map<String, String> error(
+            String code,
+            String message
+    ) {
+        return Map.of(
+                "error", code,
+                "message", message
+        );
     }
 }

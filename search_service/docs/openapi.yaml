@@ -253,7 +253,13 @@ components:
 
     Error:
       type: object
+      required:
+        - error
+        - message
       properties:
         error:
+          type: string
+          example: bad_request
+        message:
           type: string
           example: q parameter is required

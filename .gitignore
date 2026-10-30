@@ -23,3 +23,5 @@ gson-*.jar
 
 # Runtime state files
 control_service/data/control/*.json
+
+/data/

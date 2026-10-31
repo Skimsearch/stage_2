@@ -60,6 +60,7 @@ The service requires Java 17 or newer.
 | Variable | Default | Meaning |
 |---|---|---|
 | `INGESTION_PORT` | `7001` | HTTP port used by the Ingestion Service. |
+| `INGESTION_THREADS` | `250` | Maximum number of Jetty threads used by the Ingestion Service. Valid range: 8–1000. |
 | `DATA_DIR` | `data` | Root data directory. Ingestion writes books under `DATA_DIR/datalake/batch`. |
 
 Example:
@@ -67,6 +68,7 @@ Example:
 ```bash
 DATA_DIR=/path/to/shared/data \
 INGESTION_PORT=7001 \
+INGESTION_THREADS=250 \
 java -jar target/ingestion-service-1.0.0.jar
 ```
 
@@ -245,6 +247,8 @@ This prevents duplicate work inside one Ingestion Service process.
 
 Locks are local to the Java process. They do not coordinate different Ingestion Service replicas running as separate processes.
 
+The Jetty worker pool can be configured through `INGESTION_THREADS`.
+
 ## Project Gutenberg download
 
 Books are downloaded from:
@@ -357,11 +361,32 @@ The initial measured averages were approximately:
 | `splitBook` | `8.78 µs/op` |
 | `writeBook` | `446.65 µs/op` |
 
-Raw JMH output is stored in:
+The initial local benchmark output is stored in:
 
 ```text
 results/ingestion-jmh.json
 ```
+
+The final reproducible benchmark run is prepared through:
+
+```text
+scripts/run_final_benchmarks.sh
+scripts/run_final_benchmarks.ps1
+```
+
+The final raw JMH output will be stored in:
+
+```text
+benchmarks/results/ingestion-jmh-final.json
+```
+
+and the execution environment will be recorded in:
+
+```text
+benchmarks/results/benchmark-environment.txt
+```
+
+The final benchmark should be executed on the shared experiment machine so that the environment and raw results correspond to the common Stage 2 evaluation setup.
 
 These measurements characterize the internal implementation and should be distinguished from end-to-end ingestion latency, which also includes network access to Project Gutenberg.
 
@@ -395,6 +420,37 @@ POST /index/update/{book_id}
 ```
 
 This makes `READY` the hand-off state between Ingestion and Indexing.
+
+## Experiment reset
+
+Stage 2 provides repository-level reset scripts:
+
+```text
+../scripts/reset_experiment.sh
+../scripts/reset_experiment.ps1
+```
+
+They remove the experiment state from the shared `DATA_DIR`:
+
+```text
+datalake/
+datamart/
+control/
+```
+
+This includes the Control workflow state stored under `DATA_DIR/control`.
+
+The reset scripts recreate these directories empty so that a reproducible clean experiment can be started.
+
+For safety, the scripts refuse to reset an invalid or non-existing `DATA_DIR`.
+
+The default experiment directory is:
+
+```text
+data
+```
+
+which matches the default `DATA_DIR` used by the Stage 2 services.
 
 ## Limits and Stage 3
 

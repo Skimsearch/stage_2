@@ -236,6 +236,67 @@ Example search result:
 
 This verifies the end-to-end flow from orchestration and ingestion to indexing and search retrieval for the tested book.
 
+## Coordination mechanism and deployment
+
+Skimsearch uses **classical orchestration**: the Control Service is the only component that knows the workflow. For each book it calls `POST /ingest/{book_id}` on Ingestion and then `POST /index/update/{book_id}` on Indexing, and persists the state of every book so it can resume after a restart. Ingestion, Indexing and Search never call each other; they only share files (the datalake and the SQLite datamart).
+
+All services run as separate processes on a **single machine**, so the shared `DATA_DIR` is a local directory.
+
+## Configuration
+
+| Variable | Used by | Default | Meaning |
+|---|---|---|---|
+| `DATA_DIR` | Ingestion, Indexing, Search | `data` | Root data directory (datalake and datamart). Must be the same for all services. Use an absolute path. |
+| `INGESTION_PORT` | Ingestion | `7001` | HTTP port. |
+| `INDEXING_PORT` | Indexing | `7002` | HTTP port. |
+| `SEARCH_PORT` | Search | `7003` | HTTP port. |
+| `INDEXING_THREADS` | Indexing | `250` | Maximum Jetty threads (allowed range 8–1000). |
+| `SEARCH_THREADS` | Search | `250` | Maximum Jetty threads. |
+| `INGESTION_URL` | Control | `http://localhost:7001` | Ingestion base URL. |
+| `INDEXING_URL` | Control | `http://localhost:7002` | Indexing base URL. |
+| `CONTROL_STATE_FILE` | Control | `data/control/state.json` | Workflow state file. Keep it inside `DATA_DIR` so a reset also clears it. |
+
+Replicas: to run a second replica of a service, start another process of the same jar with a different `*_PORT`. All Indexing replicas write to the same `index.db`; writes are serialised by SQLite.
+
+## Experiment inputs
+
+- `experiments/books.txt`: the common set of book IDs used for every experiment.
+- `experiments/queries.txt`: the common set of search terms.
+
+## API specifications and checks
+
+Each service documents its HTTP API in `<service>/docs/openapi.yaml`.
+
+| Service | OpenAPI | API checks (service must be running) |
+|---|---|---|
+| Ingestion | `ingestion_service/docs/openapi.yaml` | `ingestion_service/scripts/ingestion_checks.sh` |
+| Indexing | `indexing_service/docs/openapi.yaml` | `indexing_service/scripts/indexing_checks.ps1` (or `.sh`) |
+| Search | `search_service/docs/openapi.yaml` | `search_service/scripts/search_checks.ps1` |
+
+Each script prints a PASS/FAIL line per check and ends with a summary.
+
+## Benchmarks
+
+JMH benchmarks live in `src/test/java` of each service (5 warm-up and 10 measurement iterations). Per-service commands and result locations:
+
+- Indexing: `indexing_service/README.md`, section *Benchmarks*. Results are written to `indexing_service/benchmarks/results/`.
+- Search: `search_service/README.md`, sections *JMH benchmarks* and *HTTP load test*. Results are in `search_service/benchmarks/results/`.
+- Ingestion: `ingestion_service/results/`.
+
+Indexing end-to-end experiment (with Ingestion and Indexing running and the same `DATA_DIR`):
+
+```powershell
+.\indexing_service\scripts\run_indexing_experiment.ps1 -ExpectedUniqueTerms 16729
+```
+
+For final numbers, run everything on the same machine and record it with each result (`run-info.txt` for Indexing, `search_service/scripts/capture_benchmark_environment.ps1` for Search).
+
+## Known limits
+
+- Single machine, single SQLite file: no distributed storage and no horizontal scaling of the database.
+- The Control Service processes books sequentially.
+- `year` is the Project Gutenberg release year, not the original publication year.
+
 ## Repository structure
 
 ```text

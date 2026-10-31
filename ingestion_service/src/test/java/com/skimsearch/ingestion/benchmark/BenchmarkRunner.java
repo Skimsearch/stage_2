@@ -16,7 +16,7 @@ public class BenchmarkRunner {
                         "-Xms512m",
                         "-Xmx512m"
                 )
-                .result("results/ingestion-jmh.json")
+                .result("benchmarks/results/ingestion-jmh-final.json")
                 .resultFormat(ResultFormatType.JSON)
                 .build();
 

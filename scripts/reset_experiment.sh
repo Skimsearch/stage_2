@@ -3,10 +3,25 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DATA_DIR="${DATA_DIR:-$REPO_ROOT/data}"
+
+DATA_DIR="${DATA_DIR:-data}"
+
+if [ -z "$DATA_DIR" ]; then
+    echo "Refusing to reset: DATA_DIR is empty"
+    exit 1
+fi
+
+if [[ "$DATA_DIR" != /* ]]; then
+    DATA_DIR="$REPO_ROOT/$DATA_DIR"
+fi
 
 if [ "$DATA_DIR" = "/" ] || [ "$DATA_DIR" = "$HOME" ]; then
     echo "Refusing to reset unsafe DATA_DIR: $DATA_DIR"
+    exit 1
+fi
+
+if [ ! -d "$DATA_DIR" ]; then
+    echo "Refusing to reset: DATA_DIR does not exist: $DATA_DIR"
     exit 1
 fi
 

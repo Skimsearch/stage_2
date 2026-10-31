@@ -2,14 +2,18 @@ $ErrorActionPreference = "Stop"
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 
-if ($env:DATA_DIR) {
-    $DataDir = $env:DATA_DIR
+if ([string]::IsNullOrWhiteSpace($env:DATA_DIR)) {
+    $DataDir = Join-Path $RepoRoot "data"
 }
 else {
-    $DataDir = Join-Path $RepoRoot "data"
+    $DataDir = $env:DATA_DIR
 }
 
 $DataDir = [System.IO.Path]::GetFullPath($DataDir)
+
+if (-not (Test-Path -Path $DataDir -PathType Container)) {
+    throw "Refusing to reset: DATA_DIR does not exist: $DataDir"
+}
 
 Write-Host "Resetting Stage 2 experiment"
 Write-Host "DATA_DIR=$DataDir"

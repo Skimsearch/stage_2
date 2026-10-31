@@ -67,6 +67,12 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
+                <configuration>
+                    <!-- JMH generates classes named *_jmhTest; they are not JUnit tests. -->
+                    <excludes>
+                        <exclude>**/jmh_generated/**</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
 
             <!-- Shade (not plain jar plugin): bundles Javalin, Gson, etc. so

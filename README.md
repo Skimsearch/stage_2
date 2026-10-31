@@ -251,6 +251,7 @@ All services run as separate processes on a **single machine**, so the shared `D
 | `INDEXING_PORT` | Indexing | `7002` | HTTP port. |
 | `SEARCH_PORT` | Search | `7003` | HTTP port. |
 | `INDEXING_THREADS` | Indexing | `250` | Maximum Jetty threads (allowed range 8–1000). |
+| `INGESTION_THREADS` | Ingestion | `250` | Maximum Jetty threads (allowed range 8–1000). |
 | `SEARCH_THREADS` | Search | `250` | Maximum Jetty threads. |
 | `INGESTION_URL` | Control | `http://localhost:7001` | Ingestion base URL. |
 | `INDEXING_URL` | Control | `http://localhost:7002` | Indexing base URL. |
@@ -281,8 +282,7 @@ JMH benchmarks live in `src/test/java` of each service (5 warm-up and 10 measure
 
 - Indexing: `indexing_service/README.md`, section *Benchmarks*. Results are written to `indexing_service/benchmarks/results/`.
 - Search: `search_service/README.md`, sections *JMH benchmarks* and *HTTP load test*. Results are in `search_service/benchmarks/results/`.
-- Ingestion: `ingestion_service/results/`.
-
+- Ingestion: `ingestion_service/scripts/run_final_benchmarks.ps1` (or `.sh`), run from inside `ingestion_service/`. Results are written to `ingestion_service/benchmarks/results/`.
 Indexing end-to-end experiment (with Ingestion and Indexing running and the same `DATA_DIR`):
 
 ```powershell

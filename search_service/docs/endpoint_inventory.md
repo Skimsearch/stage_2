@@ -143,3 +143,15 @@ The second criterion provides deterministic ordering when two books have the sam
     }
   ]
 }
+``` 
+
+## Browser access and CORS
+
+The Search Service is the front-end-facing service. In the current Stage 2
+deployment it is exercised through local HTTP clients, so no cross-origin
+browser configuration is required.
+
+If the front-end is hosted on a different origin, CORS must be configured on
+the Search Service to allow requests from that specific front-end origin.
+Internal Ingestion and Indexing endpoints are not intended to be exposed to
+the browser.

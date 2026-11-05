@@ -156,6 +156,18 @@ ALL SEARCH CHECKS PASSED
 The checks cover keyword search, metadata filters, combined filters,
 pagination, empty results and invalid parameters.
 
+## CORS and front-end access
+
+During Stage 2, the Search API is accessed by local HTTP clients, so CORS is
+not required for the current deployment.
+
+If a browser front-end is deployed on a different origin, CORS must be enabled
+in Javalin for the Search Service. The configuration should allow only the
+front-end origin instead of enabling unrestricted cross-origin access.
+
+The front-end would access the public Search endpoints on port `7003`, while
+Ingestion and Indexing endpoints remain internal to the backend workflow.
+
 ## JMH benchmarks
 
 JMH benchmarks are located in:

@@ -38,9 +38,10 @@ The services communicate through HTTP. Ingestion and Indexing share a data direc
 
 ## Requirements
 
-- Java 17 or later
+- Java 17 or later (tested with JDK 21 and JDK 26; see *Troubleshooting* for JDK 23+)
 - Apache Maven
 - PowerShell (for the commands below on Windows)
+- Internet access to `gutenberg.org` (Ingestion downloads the books)
 
 ## Build and test
 
@@ -74,7 +75,7 @@ $env:DATA_DIR = Join-Path (Get-Location).Path "data"
 ### 1. Ingestion Service
 
 ```powershell
-java -jar .\ingestion_service\target\ingestion-service-1.0.0-shaded.jar
+java -jar .\ingestion_service\target\ingestion-service-1.0.0.jar
 ```
 
 Default port: `7001`
@@ -108,7 +109,7 @@ $env:CONTROL_STATE_FILE = Join-Path (Get-Location).Path "data\control\state.json
 Run the coordinator with one or more book IDs:
 
 ```powershell
-java -jar .\control_service\target\control-service-1.0.0-shaded.jar 1342
+java -jar .\control_service\target\control-service-1.0.0.jar 1342
 ```
 
 The Control Service uses these default URLs:
@@ -283,6 +284,7 @@ JMH benchmarks live in `src/test/java` of each service (5 warm-up and 10 measure
 - Indexing: `indexing_service/README.md`, section *Benchmarks*. Results are written to `indexing_service/benchmarks/results/`.
 - Search: `search_service/README.md`, sections *JMH benchmarks* and *HTTP load test*. Results are in `search_service/benchmarks/results/`.
 - Ingestion: `ingestion_service/scripts/run_final_benchmarks.ps1` (or `.sh`), run from inside `ingestion_service/`. Results are written to `ingestion_service/benchmarks/results/`.
+
 Indexing end-to-end experiment (with Ingestion and Indexing running and the same `DATA_DIR`):
 
 ```powershell
@@ -290,6 +292,76 @@ Indexing end-to-end experiment (with Ingestion and Indexing running and the same
 ```
 
 For final numbers, run everything on the same machine and record it with each result (`run-info.txt` for Indexing, `search_service/scripts/capture_benchmark_environment.ps1` for Search).
+
+### Running the benchmarks from a clean clone (Windows)
+
+This is the sequence used to run the full set on a lab machine. Every new PowerShell window starts without variables, so set them first in each one:
+
+```powershell
+$ROOT = "C:\path\to\stage_2"      # absolute path, without spaces
+$env:DATA_DIR = "$ROOT\data"
+```
+
+JMH classes are run from the test classpath of each module. Build it once per module, from inside the module folder:
+
+```powershell
+mvn test-compile
+mvn dependency:build-classpath "-Dmdep.includeScope=test" "-Dmdep.outputFile=target/cp.txt"
+$cp = "target\test-classes;target\classes;" + (Get-Content target\cp.txt)
+```
+
+1. **End-to-end pipeline** (Ingestion, Indexing and Search running, from `$ROOT`). Time the Control run and verify that all books reached `INDEXED`:
+
+   ```powershell
+   $t = Measure-Command { java -jar "$ROOT\control_service\target\control-service-1.0.0.jar" (Get-Content experiments\books.txt) | Out-Host }; $t.TotalSeconds
+   ```
+
+   This time includes downloading from Project Gutenberg. Clear `data\datalake`, `data\datamart` and `data\control` before each repetition (`scripts\reset_experiment.ps1`), otherwise already indexed books are skipped.
+
+2. **Indexing throughput without network** (Indexing running): `Invoke-RestMethod -Method Post http://localhost:7002/index/rebuild`.
+
+3. **Indexing JMH** (from `indexing_service`, services stopped): `java -cp $cp com.skimsearch.benchmark.BenchmarkRunner`.
+
+4. **Ingestion JMH** (from `ingestion_service`): `scripts\run_final_benchmarks.ps1`, or directly `java -cp $cp com.skimsearch.ingestion.benchmark.BenchmarkRunner`.
+
+5. **Search JMH** (from `search_service`, against the real index). `SearchRepositoryBenchmark` reads the index from the `dataDir` system property, which defaults to the test index `../data/check`, so pass it to the forked JVM explicitly:
+
+   ```powershell
+   java -cp $cp org.openjdk.jmh.Main SearchTokenizerBenchmark -p query=pride -rf json -rff benchmarks/results/jmh-tokenizer-final.json
+   java -cp $cp org.openjdk.jmh.Main SearchRepositoryBenchmark.keywordSearch -jvmArgsPrepend "-DdataDir=$ROOT\data" -rf json -rff benchmarks/results/jmh-search-repository-final.json
+   java -cp $cp org.openjdk.jmh.Main SearchRepositoryBenchmark.filteredSearch -jvmArgsPrepend "-DdataDir=$ROOT\data" -p filteredTerm=alice -p "author=Lewis Carroll" -p language=en -p year=2008 -rf json -rff benchmarks/results/jmh-search-filtered-final.json
+   ```
+
+   The `filteredSearch` parameters must match metadata present in the index (check with `GET /books/{book_id}`).
+
+6. **Search HTTP load test and thread experiment** (only Search running). Repeat with `SEARCH_THREADS` = 16, 32 and 250 (default), restarting Search each time and keeping the same number of requests so the runs are comparable:
+
+   ```powershell
+   # window 1
+   $env:SEARCH_THREADS = "16"; java -jar "$ROOT\search_service\target\search-service-1.0.0.jar"
+   # window 2, from search_service
+   java -cp $cp com.skimsearch.search.SearchLoadTest http://localhost:7003 5000 benchmarks/results/search-load-t16.csv ../experiments/queries.txt
+   ```
+
+7. **CPU and memory per process** while an experiment runs (from `$ROOT`, in another window):
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\sample_processes.ps1 -OutFile benchmarks\process-usage.csv -DurationSeconds 60
+   ```
+
+Results are written to `indexing_service/benchmarks/results/`, `ingestion_service/benchmarks/results/` and `search_service/benchmarks/results/`. Record the host (CPU, cores, RAM, disk), Java version and Git commit with every set of results.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `Unable to access jarfile \search_service\...` | `$ROOT` is not set in that PowerShell window. | Set `$ROOT` (and `DATA_DIR`) in every new window. |
+| Search returns `total: 0` or `/status` shows `"database":"unavailable"` | The services were started with different `DATA_DIR` values. | Stop them and restart all of them with the same absolute `DATA_DIR`. |
+| `Unable to find the resource: /META-INF/BenchmarkList` (Indexing JMH) | Since JDK 23 javac no longer runs annotation processors found on the classpath, and `indexing_service/pom.xml` does not declare the JMH processor. | Rebuild with `mvn clean package -DskipTests "-Dmaven.compiler.proc=full"`, regenerate `target/cp.txt`, and check that `target\test-classes\META-INF\BenchmarkList` exists. |
+| `Get-Content : ... target\cp.txt ... no existe` and then `NoClassDefFoundError: org/openjdk/jmh/...` | `mvn clean` deleted `target/cp.txt`. | Run the `dependency:build-classpath` command again. |
+| `Can not touch the result file: benchmarks/results/ingestion-jmh-final.json` | JMH does not create the output folder when `BenchmarkRunner` is run directly. | `New-Item -ItemType Directory -Force benchmarks\results`, or use `scripts\run_final_benchmarks.ps1`, which creates it. |
+| `Could not find or load main class http:..localhost:7003` | `$cp` is empty in that window, so Java treats the class name as the classpath. | Rebuild `$cp` from inside `search_service`. |
+| `git commit: unknown` in `run-info.txt` | The repository was downloaded as a ZIP, without `.git`. | Use `git clone`, or write the commit hash by hand next to the results. |
 
 ## Known limits
 

@@ -55,8 +55,8 @@ The `ServiceClients` class communicates with the other microservices using HTTP 
 
 | Service | Endpoint | Expected JSON response |
 |---|---|---|
-| Ingestion | `/ingest/{bookId}` | `{"status":"READY"}` |
-| Indexing | `/index/update/{bookId}` | `{"index":"updated","status":"PUBLISHED"}` |
+| Ingestion | `/ingest/{book_id}` | `{"status":"READY"}` |
+| Indexing | `/index/update/{book_id}` | `{"index":"updated","status":"PUBLISHED"}` |
 
 Response validation is required before a phase is considered successful. Field values are compared without case sensitivity.
 

@@ -351,6 +351,70 @@ $cp = "target\test-classes;target\classes;" + (Get-Content target\cp.txt)
 
 Results are written to `indexing_service/benchmarks/results/`, `ingestion_service/benchmarks/results/` and `search_service/benchmarks/results/`. Record the host (CPU, cores, RAM, disk), Java version and Git commit with every set of results.
 
+
+## Performance Analysis, Coordination and Scalability
+
+### Coordination overhead
+
+The coordination overhead of the Control Service was not measured independently during the available benchmark sessions. Therefore, no quantitative conclusion can be drawn about the time spent coordinating the services compared with the time spent performing ingestion and indexing.
+
+A future experiment could measure this overhead by recording timestamps for the following events:
+
+- **Total pipeline time:** elapsed time from the beginning of the orchestration of a book until Control reports the `INDEXED` state.
+- **Ingestion wait time:** elapsed time for each request sent by Control to the Ingestion Service, including the time until a response is received.
+- **Indexing wait time:** elapsed time for each request sent by Control to the Indexing Service, including the time until a response is received.
+- **Control overhead:** the remaining time after subtracting the measured Ingestion and Indexing request durations from the total pipeline time. This includes local orchestration, state persistence and other coordination activities.
+
+Retry delays and failed attempts should also be recorded separately to distinguish normal coordination overhead from time spent recovering from temporary failures.
+
+These measurements should be repeated under the same hardware, dataset and service configuration to obtain comparable results.
+
+### Timeouts and retries
+
+The Control Service configures the following HTTP communication parameters:
+
+| Parameter | Configuration |
+|---|---:|
+| Connection timeout | 3 seconds |
+| Request timeout | 5 seconds |
+| Maximum attempts | 3 |
+| Delay between attempts | 1 second |
+
+The client retries temporary HTTP errors (`5xx`, `408` and `429`) and communication errors. Invalid JSON responses and responses that do not match the expected service contract are rejected without retrying.
+
+The 5-second request timeout limits how long Control waits for an individual request. Consequently, a slow response may be treated as a failed attempt even if the downstream service is still processing the operation. The retry mechanism can increase the total time spent on a workflow beyond the timeout of a single request.
+
+### Replication and scalability
+
+The current deployment runs all services as separate processes on a single machine. Although additional service instances can be started on different ports, replication does not automatically provide horizontal scalability for every component.
+
+- **Control Service:** Multiple instances could distribute orchestration tasks, but the current implementation stores workflow states in a local JSON file. A replicated deployment would require shared persistent state and coordination mechanisms to prevent multiple instances from processing the same book simultaneously.
+- **Ingestion Service:** Multiple instances could process different books in parallel. This would require a shared datalake, reliable file writes and protection against duplicate processing of the same book.
+- **Indexing Service:** Multiple instances can process indexing requests, but they currently share a single SQLite database. SQLite serializes concurrent writes, limiting the benefits of adding more indexing workers. The available JMH results do not conclusively demonstrate this bottleneck: the measurements are variable and do not establish a reliable scaling trend.
+- **Search Service:** Additional instances could distribute incoming search requests. However, they would need access to a consistent and up-to-date index.
+
+For Stage 3, a more scalable architecture could introduce:
+
+- A message broker or task queue to distribute ingestion and indexing jobs.
+- Shared persistent storage for workflow state and ingested book files.
+- A database or distributed indexing solution designed to support concurrent writes.
+- A load balancer to distribute requests across service replicas.
+- Monitoring and distributed tracing to measure processing time, coordination overhead and service-level performance.
+
+These changes would reduce dependence on a single machine and make it easier to scale individual services independently.
+
+### Validation order
+
+The validation of the processing pipeline must follow the dependency order between services:
+
+1. **Ingestion:** verify that the book has been successfully downloaded and that both its header and body files are available. The expected response is `READY`.
+2. **Indexing:** once ingestion is complete, verify that the Indexing Service has processed the book and published it to the SQLite index. The expected response is `PUBLISHED`.
+3. **Search:** only after successful indexing, verify that the book can be retrieved through `GET /books/{book_id}` and that its terms can be found through the Search API.
+
+Indexing must be checked before Search because the Search Service reads the database populated by the Indexing Service. A successful ingestion alone does not guarantee that a book is already searchable.
+
+
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |

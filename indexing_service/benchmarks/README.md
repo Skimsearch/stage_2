@@ -12,13 +12,13 @@ and what they do not. Read the limitations before comparing these numbers with a
 | Git commit | `86f3b10` |
 | CPU | Intel Core i7-9700 @ 3.00 GHz, 8 cores / 8 logical CPUs (no hyper-threading) |
 | RAM | 16 GB (17,045,827,584 bytes reported by Windows) |
-| Storage | 480 GB SSD and 1 TB HDD; the disk that held the repository and `DATA_DIR` was not recorded |
+| Storage | 480 GB SSD and 1 TB HDD; the repository and `DATA_DIR` were on the SSD |
 | OS | Windows 11 (amd64) |
 | Java used to run JMH | 26 (Oracle Corporation); the code is compiled for Java 17 (`maven.compiler.release=17`) |
 | JVM arguments | `-Xms2G -Xmx2G` |
 | JMH methodology | 5 warm-up iterations x 1 s, 10 measurement iterations x 1 s, 1 fork |
 | Command | `com.skimsearch.benchmark.BenchmarkRunner` (see `run-info.txt`) |
-| Host state | Whether the machine was idle during the run was not recorded |
+| Host state | Not isolated: Chrome was open (GitHub and the university web site); CPU load was not recorded |
 
 ## Files
 
@@ -105,7 +105,7 @@ order of magnitude; they are not comparable with the class-session results.
   terms in our corpus.
 * The server's `INDEXING_THREADS` setting, replicas, CPU and memory per process, and the
   coordination with the Control Module were not measured.
-* The host was not recorded as idle, and the disk that held the data was not recorded.
+* The host was not isolated (Chrome was open) and its background load was not recorded.
 * JMH ran on Java 26 while the code targets Java 17.
 * Results of other services (Search, Ingestion) and of other machines are not in this
   folder and must not be mixed with these.

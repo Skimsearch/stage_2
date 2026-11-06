@@ -222,7 +222,8 @@ Existing results must be labelled according to their origin.
 
 | Result | Environment | Workload | Purpose |
 |---|---|---|---|
-| Ingestion JMH | macOS development machine | synthetic in-memory/local benchmark inputs | Component microbenchmark |
+| Ingestion JMH (initial run) | macOS development machine, JDK 25 | synthetic in-memory/local benchmark inputs | Component microbenchmark; raw output `ingestion_service/results/ingestion-jmh.json` |
+| Ingestion JMH (final run) | Laboratory machine (Intel Core i7-9700, 8 cores, 16 GB, Windows 11, JDK 26) | synthetic in-memory/local benchmark inputs | Component microbenchmark; this is the run reported in the Stage 2 report; its raw output is stored with the final laboratory results |
 | Ingestion API checks | macOS development machine | individual Project Gutenberg books | Functional validation |
 | Ingestion concurrency test | macOS development machine | book 98, two simultaneous requests | Concurrency sanity check |
 | Search JMH | Search benchmark machine recorded in raw output | Search-specific test workload | Component microbenchmark |

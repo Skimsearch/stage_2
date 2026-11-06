@@ -1,0 +1,2 @@
+"Benchmark","Mode","Threads","Samples","Score","Score Error (99,9%)","Unit","Param: uniqueTerms"
+"com.skimsearch.benchmark.IndexUpdateBenchmark.indexBook","thrpt",2,10,"46,048729","11,265522","ops/s",5000

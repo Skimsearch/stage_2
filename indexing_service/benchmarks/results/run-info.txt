@@ -1,0 +1,9 @@
+date: 2026-11-04T13:51:54.191090Z
+git commit: 86f3b10
+os: Windows 11 10.0 (amd64)
+logical cpus: 8
+java: 26 (Oracle Corporation)
+benchmark jvm args: -Xms2G -Xmx2G
+methodology: 5 warm-up x 1 s, 10 measurement x 1 s, 1 fork
+command: com.skimsearch.benchmark.BenchmarkRunner
+note: add CPU model, RAM and disk type by hand in experiments/README.md; the JVM cannot read them portably

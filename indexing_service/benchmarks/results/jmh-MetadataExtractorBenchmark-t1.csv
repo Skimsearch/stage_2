@@ -1,0 +1,2 @@
+"Benchmark","Mode","Threads","Samples","Score","Score Error (99,9%)","Unit"
+"com.skimsearch.benchmark.MetadataExtractorBenchmark.extract","avgt",1,10,"4,513512","0,121489","us/op"

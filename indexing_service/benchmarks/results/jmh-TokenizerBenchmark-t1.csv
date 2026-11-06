@@ -1,0 +1,7 @@
+"Benchmark","Mode","Threads","Samples","Score","Score Error (99,9%)","Unit","Param: words"
+"com.skimsearch.benchmark.TokenizerBenchmark.termFrequencies","avgt",1,10,"1,029708","0,011309","ms/op",10000
+"com.skimsearch.benchmark.TokenizerBenchmark.termFrequencies","avgt",1,10,"11,571337","0,220592","ms/op",100000
+"com.skimsearch.benchmark.TokenizerBenchmark.termFrequencies","avgt",1,10,"65,451597","3,154084","ms/op",500000
+"com.skimsearch.benchmark.TokenizerBenchmark.tokenize","avgt",1,10,"0,696793","0,006861","ms/op",10000
+"com.skimsearch.benchmark.TokenizerBenchmark.tokenize","avgt",1,10,"7,826173","0,102855","ms/op",100000
+"com.skimsearch.benchmark.TokenizerBenchmark.tokenize","avgt",1,10,"47,732793","7,219994","ms/op",500000

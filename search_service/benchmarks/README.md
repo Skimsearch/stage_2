@@ -2,11 +2,11 @@
 
 This directory contains the reproducibility information, execution commands and raw results for the Search Service benchmarks.
 
-The current results are based on the small test index and are intended as sanity checks. Final Stage 2 measurements must be repeated using the common project corpus and query set agreed by the whole group.
+The current repository contains Search benchmark results collected during development and classroom testing. Some measurements were produced with different workloads or configurations, so only results obtained under equivalent conditions should be compared directly.
 
 ## Benchmark environment
 
-The following information must be recorded for the final published runs:
+The following information should be recorded for the available benchmark measurements where known:
 
 ```text
 Git commit:
@@ -40,7 +40,7 @@ Get-CimInstance Win32_Processor | Select-Object Name
 Get-CimInstance Win32_ComputerSystem | Select-Object TotalPhysicalMemory
 ```
 
-The benchmark report should identify the exact environment and Git revision used to produce the published results.
+The benchmark report should identify the environment and Git revision associated with each available result where this information was recorded.
 
 ## Dataset and workload
 
@@ -58,7 +58,7 @@ The shared Search query workload is stored in:
 ../experiments/queries.txt
 ```
 
-The benchmark code reads this file directly instead of keeping the final query set hard-coded in the Java source.
+The benchmark code reads this file directly instead of keeping the query set hard-coded in the Java source.
 
 Current candidate queries are:
 
@@ -70,7 +70,7 @@ london
 holmes
 ```
 
-These queries must be validated against the final common index before publishing the final Stage 2 measurements.
+These queries define the intended common Search workload. Existing measurements may have used different workloads, which must be stated when interpreting them.
 
 The filtered repository benchmark remains independently parameterized because author, language and year filters must correspond to metadata that belongs to a specific indexed book.
 
@@ -83,7 +83,7 @@ language=en
 year=1998
 ```
 
-These values are not considered the final Stage 2 workload.
+These values belong only to the synthetic sanity-check dataset and are not used as evidence of final system performance.
 
 ## JMH configuration
 
@@ -151,7 +151,7 @@ Example:
 java -cp $cp org.openjdk.jmh.Main SearchTokenizerBenchmark `
   -p query=pride `
   -rf json `
-  -rff benchmarks/results/jmh-tokenizer-final.json
+  -rff benchmarks/results/jmh-tokenizer-classroom.json
 ```
 
 Default raw output:
@@ -160,10 +160,10 @@ Default raw output:
 benchmarks/results/jmh-tokenizer.json
 ```
 
-Example final raw output:
+Example output filename:
 
 ```text
-benchmarks/results/jmh-tokenizer-final.json
+benchmarks/results/jmh-tokenizer-classroom.json
 ```
 
 ## Repository benchmark
@@ -192,7 +192,7 @@ Run:
 ```powershell
 java -cp $cp org.openjdk.jmh.Main SearchRepositoryBenchmark.keywordSearch `
   -rf json `
-  -rff benchmarks/results/jmh-search-repository-final.json
+  -rff benchmarks/results/jmh-search-repository.json
 ```
 
 A different workload file can be supplied without modifying the source:
@@ -201,7 +201,7 @@ A different workload file can be supplied without modifying the source:
 java -cp $cp org.openjdk.jmh.Main SearchRepositoryBenchmark.keywordSearch `
   -p queryFile=../experiments/queries.txt `
   -rf json `
-  -rff benchmarks/results/jmh-search-repository-final.json
+  -rff benchmarks/results/jmh-search-repository.json
 ```
 
 ### Filtered search
@@ -217,23 +217,23 @@ language=en
 year=1998
 ```
 
-The final filtered-search parameters must be selected from metadata actually present in the final common index.
+When reproducing this benchmark, the filtered-search parameters should be selected from metadata actually present in the index being tested.
 
 In particular, `year` refers to the Project Gutenberg release year stored by the Indexing Service, not the original publication year of the work.
 
-Example structure for the final run:
+Example reproducible command:
 
 ```powershell
 java -cp $cp org.openjdk.jmh.Main SearchRepositoryBenchmark.filteredSearch `
-  -p filteredTerm=<term from final workload> `
-  -p author="<author from final index>" `
-  -p language=<language from final index> `
-  -p year=<Gutenberg release year from final index> `
+  -p filteredTerm=<term from workload> `
+  -p author="<author from index>" `
+  -p language=<language from index> `
+  -p year=<Gutenberg release year from index> `
   -rf json `
-  -rff benchmarks/results/jmh-search-filtered-final.json
+  -rff benchmarks/results/jmh-search-filtered.json
 ```
 
-The final values must correspond to metadata actually present in the final common index.
+The supplied values must correspond to metadata actually present in the index being tested.
 
 ## HTTP load test
 
@@ -284,13 +284,13 @@ Run with defaults:
 java -cp $cp com.skimsearch.search.SearchLoadTest
 ```
 
-Example final run:
+Example reproducible run:
 
 ```powershell
 java -cp $cp com.skimsearch.search.SearchLoadTest `
   "http://localhost:7003" `
   500 `
-  "benchmarks/results/search-load-final.csv" `
+  "benchmarks/results/search-load-classroom.csv" `
   "../experiments/queries.txt"
 ```
 
@@ -312,37 +312,31 @@ Initial raw output:
 benchmarks/results/search-load-initial.csv
 ```
 
-Final output:
+Example additional output:
 
 ```text
-benchmarks/results/search-load-final.csv
+benchmarks/results/search-load-classroom.csv
 ```
 
-## Clean-run procedure
+## Experimental limitations
 
-Before each independent final experiment:
+The available Search measurements were collected during development and classroom testing and could not be repeated as independent final runs.
 
-1. Check out the exact Git revision to be measured.
-2. Record the Git commit and benchmark environment.
-3. Generate the shared project corpus from a clean state.
-4. Build the final common index using the Indexing Service.
-5. Verify that the expected books are present in the index.
-6. Validate the queries in `experiments/queries.txt` against that index.
-7. Run the Search benchmarks.
-8. Store the raw results in `benchmarks/results/`.
-9. Record the exact commands and parameters used.
+For this reason:
 
-The Search Service itself does not create or modify `index.db`.
+- no between-run standard deviation is reported for the HTTP load tests;
+- configurations that used different request counts, datasets or thread settings are not treated as directly comparable;
+- mean latency and p95 describe the requests observed within each individual load-test execution;
+- JMH results retain their internal warm-up and measurement iterations, but these do not represent independent executions of the complete service;
+- the operating-system filesystem cache was not explicitly cleared or controlled.
 
-A clean Search experiment therefore depends on using the common final index generated from the agreed clean Datalake.
-
-Previous benchmark output files must not be reused as if they belonged to a new run.
+These limitations must be considered when interpreting the reported performance results.
 
 ## Cache conditions
 
-The state of the operating-system filesystem cache is not currently controlled.
+The state of the operating-system filesystem cache is not explicitly controlled.
 
-Final results must state this explicitly rather than describing the measurements as cold-cache runs.
+The Stage 2 report should state this clearly rather than describing the measurements as cold-cache runs.
 
 JMH warm-up iterations are retained so JVM warm-up is handled consistently, but this does not imply that the operating-system filesystem cache is reset between runs.
 
@@ -362,31 +356,29 @@ jmh-search-repository.json
 search-load-initial.csv
 ```
 
-Final measurements should use separate filenames, for example:
+Additional classroom or experimental measurements should use descriptive filenames that identify their configuration where possible, for example:
 
 ```text
-jmh-tokenizer-final.json
-jmh-search-repository-final.json
-jmh-search-filtered-final.json
-search-load-final.csv
+jmh-tokenizer-classroom.json
+jmh-search-repository-classroom.json
+search-load-classroom.csv
+search-load-threads250-500requests.csv
 ```
 
-## Final Stage 2 benchmark procedure
+Files should not be renamed to imply a final or directly comparable experiment if they were produced under different conditions.
 
-Before publishing Search results in the final Stage 2 report:
+## Interpretation of available results
 
-1. Use the common final corpus.
-2. Use the common final index.
-3. Use `experiments/queries.txt` as the agreed Search workload.
-4. Verify that the workload produces valid searches on the final index.
-5. Record the exact Git commit.
-6. Record the host, operating system, storage/filesystem and runtime versions.
-7. Run the tokenizer JMH benchmark.
-8. Run the repository JMH benchmarks.
-9. Run the HTTP concurrency benchmark.
-10. Save all raw outputs.
-11. Report the exact commands and parameters used.
-12. Distinguish measured results from implementation-based expectations.
-13. Do not mix initial sanity-check results with final measurements.
+The raw benchmark files in this directory must be interpreted together with the configuration used for each execution.
 
-The report should reference the corresponding raw files and the exact Git revision used to generate each published result.
+Results collected with different datasets, request counts, thread settings or machines should not be used for direct performance comparisons.
+
+The Stage 2 report should therefore:
+
+1. identify the dataset and workload used for each result;
+2. report the number of requests and concurrency level;
+3. report the Search Service thread configuration where known;
+4. distinguish JMH microbenchmarks from HTTP load tests;
+5. distinguish development sanity checks from classroom measurements;
+6. avoid reporting a standard deviation across independent runs when only one execution exists;
+7. report the limitations of the available experimental evidence.

@@ -349,7 +349,7 @@ $cp = "target\test-classes;target\classes;" + (Get-Content target\cp.txt)
    powershell -ExecutionPolicy Bypass -File scripts\sample_processes.ps1 -OutFile benchmarks\process-usage.csv -DurationSeconds 60
    ```
 
-Results are written to `indexing_service/benchmarks/results/`, `ingestion_service/benchmarks/results/` and `search_service/benchmarks/results/`. Record the host (CPU, cores, RAM, disk), Java version and Git commit with every set of results.
+Results are written to `indexing_service/benchmarks/results/`, `ingestion_service/benchmarks/results/` and `search_service/benchmarks/results/`. Where each result comes from (machine, workload, limitations) is documented in `experiments/README.md`.
 
 
 ## Performance Analysis, Coordination and Scalability

@@ -348,7 +348,7 @@ Benchmark outputs are stored in:
 benchmarks/results/
 ```
 
-Current initial results include:
+Current preliminary results include:
 
 ```text
 jmh-tokenizer.json
@@ -356,14 +356,18 @@ jmh-search-repository.json
 search-load-initial.csv
 ```
 
-Additional classroom or experimental measurements should use descriptive filenames that identify their configuration where possible, for example:
+Final laboratory results used in the Stage 2 report include:
 
 ```text
-jmh-tokenizer-classroom.json
-jmh-search-repository-classroom.json
-search-load-classroom.csv
-search-load-threads250-500requests.csv
+jmh-tokenizer-final.json
+jmh-search-repository-final.json
+jmh-search-filtered-final.json
+search-load-t16.csv
+search-load-t32.csv
+search-load-t250.csv
 ```
+
+These final files correspond to the laboratory measurements reported in the Stage 2 report. Earlier files are kept as preliminary results for traceability.
 
 Files should not be renamed to imply a final or directly comparable experiment if they were produced under different conditions.
 

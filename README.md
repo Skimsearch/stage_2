@@ -262,7 +262,7 @@ Replicas: to run a second replica of a service, start another process of the sam
 
 ## Experiment inputs
 
-- `experiments/books.txt`: the common set of book IDs used for every experiment.
+- `experiments/books.txt`: the common book workload defined for the Stage 2 experiments.
 - `experiments/queries.txt`: the common set of search terms.
 
 ## API specifications and checks
@@ -281,7 +281,7 @@ Each script prints a PASS/FAIL line per check and ends with a summary.
 
 JMH benchmarks live in `src/test/java` of each service (5 warm-up and 10 measurement iterations). Per-service commands and result locations:
 
-- Indexing: `indexing_service/README.md`, section *Benchmarks*. Results are written to `indexing_service/benchmarks/results/`.
+- Indexing: `indexing_service/README.md`, section *Tests*, *API checks* and *benchmarks*. Results are written to `indexing_service/benchmarks/results/`.
 - Search: `search_service/README.md`, sections *JMH benchmarks* and *HTTP load test*. Results are in `search_service/benchmarks/results/`.
 - Ingestion: `ingestion_service/scripts/run_final_benchmarks.ps1` (or `.sh`), run from inside `ingestion_service/`. Results are written to `ingestion_service/benchmarks/results/`.
 

@@ -226,10 +226,10 @@ Existing results must be labelled according to their origin.
 | Ingestion JMH (final run) | Laboratory machine (Intel Core i7-9700, 8 cores, 16 GB, Windows 11, JDK 26) | synthetic in-memory/local benchmark inputs | Component microbenchmark; this is the run reported in the Stage 2 report; its raw output is stored with the final laboratory results |
 | Ingestion API checks | macOS development machine | individual Project Gutenberg books | Functional validation |
 | Ingestion concurrency test | macOS development machine | book 98, two simultaneous requests | Concurrency sanity check |
-| Search JMH | Search benchmark machine recorded in raw output | Search-specific test workload | Component microbenchmark |
-| Search HTTP load test | Environment recorded by Search team | Recorded query workload and request count | HTTP load experiment |
+| Search JMH (initial run) | Developer laptop recorded in `benchmark-environment.txt` | Search-specific test workload | Preliminary component microbenchmark; `jmh-search-repository.json`, `jmh-tokenizer.json`; not used in the Stage 2 report |
+| Search JMH (final run) | Laboratory machine (Intel Core i7-9700, 8 cores, 16 GB, Windows 11, JDK 26), 4 November 2026 | experiment queries; index size not recorded | Component microbenchmark used in the report; `*-final.json` in `search_service/benchmarks/results/` |
+| Search HTTP load test (final run) | Same laboratory machine | 5 queries, 5,000 requests per level, 1-50 clients, SEARCH_THREADS = 16/32/250 | Used in the report; `search-load-t16.csv`, `-t32.csv`, `-t250.csv`. The earlier `search-load-initial.csv` and the 500-request run are not used |
 | Indexing JMH | Indexing benchmark environment | Indexing-specific workload | Component microbenchmark |
-
 Results from different rows are not assumed to be directly comparable.
 
 ## Known limitations
